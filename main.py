@@ -69,6 +69,9 @@ def updatedb(dbtype):
     elif dbtype == 'ubl':
         with open('user_blacklist.json', 'w') as f:
             f.write(json.dumps(user_blacklist, sort_keys=True, indent=4))
+    elif dbtype == 'pdl':
+        with open('past_deleted.json', 'w') as f:
+            f.write(json.dumps(past_deleted, sort_keys=True, indent=4))
 
 
 def runbot():
@@ -90,7 +93,7 @@ Did you mean might have?
 ^^| ^^I ^^accept ^^feedback ^^in ^^PMs. ^^|
 ^^[[Opt-out]](http://www.reddit.com/message/compose/?to=Might_have_meant&subject=User+Opt+Out&message=Click+send+to+opt+yourself+out.) ^^|
 ^^Moderator? ^^Click ^^[[here]](http://www.reddit.com/message/compose/?to=Might_have_meant&subject=Subreddit+Opt+Out&message=Click+send+to+opt+your+subreddit+out.) ^^|
-^^Downvote ^^this ^^comment ^^to ^^delete ^^it.''' % mightofcapt)
+^^Downvote ^^this ^^comment ^^to ^^delete ^^it. ^^| ^^[[Source Code]](https://github.com/arielbeje/Might_have_meant) ^^| ^^[Programmer](https://www.reddit.com/message/compose/?to=arielbeje)''' % mightofcapt)
                 print('Fixed a commment by', comment.author)
                 comments_replied_to.append(comment.id)
                 updatedb('cdb')
@@ -119,8 +122,7 @@ def deletepast():
                 logging.error(traceback.format_exc())
                 continue
 
-        with open('past_deleted.json', 'w') as f:
-            f.write(json.dumps(past_deleted, sort_keys=True, indent=4))
+        updatedb('pdl')
         time.sleep(3600)
 
 
