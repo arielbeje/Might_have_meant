@@ -106,15 +106,15 @@ def deletepast():
         comments = user.comments.new(limit=None)
         print("Deleting downvoted comments...")
         for comment in comments:
-            creatd = datetime.datetime.fromtimestamp(comment.created)
+            creatd = datetime.datetime.fromtimestamp(comment.created_utc)
             try:
                 if(comment.score < threshold and comment.id not in past_deleted and
-                   creatd + datetime.timedelta(hours=1) < datetime.datetime.now()):
+                   creatd + datetime.timedelta(hours=1) < datetime.datetime.utcnow()):
                     print("Deleted a comment on /r/" + str(comment.subreddit))
                     comment.delete()
                     past_deleted.append(comment.id)
 
-                elif(creatd + datetime.timedelta(hours=1) > datetime.datetime.now() and
+                elif(creatd + datetime.timedelta(hours=1) > datetime.datetime.utcnow() and
                      comment.score < threshold and comment.id not in past_deleted):
                     print("Did not delete <1 hour old comment with ID " + comment.id)
 
