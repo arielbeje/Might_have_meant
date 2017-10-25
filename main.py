@@ -10,7 +10,7 @@ import threading
 
 reddit = praw.Reddit('bot1')
 subreddit = reddit.subreddit('all')
-starttime = datetime.datetime.now()
+starttime = time.time()
 user = reddit.redditor('Might_have_meant')
 threshold = 0
 comments = user.comments.new(limit=None)
