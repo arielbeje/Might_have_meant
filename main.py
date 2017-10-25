@@ -93,7 +93,7 @@ Did you mean might have?
 ^^| ^^I ^^accept ^^feedback ^^in ^^PMs. ^^|
 ^^[[Opt-out]](http://www.reddit.com/message/compose/?to=Might_have_meant&subject=User+Opt+Out&message=Click+send+to+opt+yourself+out.) ^^|
 ^^Moderator? ^^Click ^^[[here]](http://www.reddit.com/message/compose/?to=Might_have_meant&subject=Subreddit+Opt+Out&message=Click+send+to+opt+your+subreddit+out.) ^^|
-^^Downvote ^^this ^^comment ^^to ^^delete ^^it. ^^| ^^[[Source Code]](https://github.com/arielbeje/Might_have_meant) ^^| ^^[Programmer](https://www.reddit.com/message/compose/?to=arielbeje)''' % mightofcapt)
+^^Downvote ^^this ^^comment ^^to ^^delete ^^it. ^^| [^^\[Source ^^Code\]](https://github.com/arielbeje/Might_have_meant) ^^| ^^[[Programmer]](https://www.reddit.com/message/compose/?to=arielbeje)''' % mightofcapt)
                 print('Fixed a commment by', comment.author)
                 comments_replied_to.append(comment.id)
                 updatedb('cdb')
