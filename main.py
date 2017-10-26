@@ -144,10 +144,10 @@ def readpms():
 
                 elif (item.subject.lower() == "subreddit opt out" or
                         item.subject.lower() == "subreddit+opt+out"):
-                    print("Got a request to blacklist a subreddit from /u/" + item.author)
+                    print("Got a request to blacklist a subreddit from /u/" + str(item.author))
 
                 else:
-                    print("Got a PM from " + item.author + " saying:")
+                    print("Got a PM from " + str(item.author) + " saying:")
                     print(str(item.content))
                     to_mark_read.append(item)
                     reddit.inbox.mark_read(to_mark_read)
