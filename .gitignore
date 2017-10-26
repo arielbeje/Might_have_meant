@@ -6,3 +6,5 @@ read_pms.py
 test.py
 users_replied_to.json
 sentence_blacklist.json
+past_deleted.json
+comments_replied_to.json

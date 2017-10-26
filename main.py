@@ -104,19 +104,19 @@ Did you mean might have?
 def deletepast():
     while True:
         comments = user.comments.new(limit=None)
-        print("Deleting downvoted comments...")
+        # print("Deleting downvoted comments...")
         for comment in comments:
             creatd = datetime.datetime.fromtimestamp(comment.created_utc)
             try:
                 if(comment.score < threshold and comment.id not in past_deleted and
                    creatd + datetime.timedelta(hours=1) < datetime.datetime.utcnow()):
-                    print("Deleted a comment on /r/" + str(comment.subreddit))
                     comment.delete()
+                    print("Deleted a comment on /r/" + str(comment.subreddit))
                     past_deleted.append(comment.id)
 
-                elif(creatd + datetime.timedelta(hours=1) > datetime.datetime.utcnow() and
-                     comment.score < threshold and comment.id not in past_deleted):
-                    print("Did not delete <1 hour old comment with ID " + comment.id)
+                # elif(creatd + datetime.timedelta(hours=1) > datetime.datetime.utcnow() and
+                    # comment.score < threshold and comment.id not in past_deleted):
+                    # print("Did not delete <1 hour old comment with ID " + comment.id)
 
             except Exception as e:
                 logging.error(traceback.format_exc())
