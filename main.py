@@ -132,14 +132,19 @@ def readpms():
             # print("Checking message with subject \"%s\"" % item.subject)
             if(isinstance(item, praw.models.Message) and item.author not in user_blacklist and
                isinstance(item, praw.models.SubredditMessage) is False):
-                if item.subject.lower() == "user opt out" or "user+opt+out":
+                if (item.subject.lower() == "user opt out" or
+                        item.subject.lower() == "user+opt+out"):
                     user_blacklist.append(str(item.author))
                     updatedb('ubl')
                     item.reply("You have been added to the user blacklist of this bot.")
-                    print("Added " + str(item.author) + " to user blacklist.")
+                    print("Added /u/" + str(item.author) + " to user blacklist.")
                     to_mark_read.append(item)
                     reddit.inbox.mark_read(to_mark_read)
                     to_mark_read = []
+
+                elif (item.subject.lower() == "subreddit opt out" or
+                        item.subject.lower() == "subreddit+opt+out"):
+                    print("Got a request to blacklist a subreddit from /u/" + item.author)
 
                 else:
                     print("Got a PM from " + item.author + " saying:")
