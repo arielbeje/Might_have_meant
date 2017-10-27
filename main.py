@@ -58,6 +58,13 @@ else:
         past_deleted = json.load(f)
         past_deleted = list(filter(None, past_deleted))
 
+if not os.path.isfile('subreddits_commented.json'):
+    subreddits_commented = []
+else:
+    with open('subreddits_commented.json', 'r') as f:
+        subreddits_commented = json.load(f)
+        subreddits_commented = list(filter(None, subreddits_commented))
+
 
 def updatedb(dbtype):
     if dbtype == 'cdb':
@@ -72,6 +79,12 @@ def updatedb(dbtype):
     elif dbtype == 'pdl':
         with open('past_deleted.json', 'w') as f:
             f.write(json.dumps(past_deleted, sort_keys=True, indent=4))
+    elif dbtype == 'sbl':
+        with open('subreddit_blacklist.json', 'w') as f:
+            f.write(json.dumps(subreddit_blacklist, sort_keys=True, indent=4))
+    elif dbtype == 'scm':
+        with open('subreddits_commented.json', 'w') as f:
+            f.write(json.dumps(subreddits_commented, sort_keys=True, indent=4))
 
 
 def runbot():
@@ -82,7 +95,7 @@ def runbot():
             if (comment.id not in comments_replied_to and
                     str(comment.author) not in user_blacklist and
                     comment.created > starttime and
-                    str(comment.subreddit) not in subreddit_blacklist and
+                    str(comment.subreddit).lower() not in subreddit_blacklist and
                     searchpattern.search(content) is None):
                 mightofcapt = re.search(".*?(might of).*?", content, flags=re.IGNORECASE).group(1)
                 comment.reply('''> %s
@@ -99,6 +112,8 @@ Did you mean might have?
                 updatedb('cdb')
                 users_replied_to.append(str(comment.author))
                 updatedb('udb')
+                subreddits_commented.append(str(comment.subreddit).lower())
+                updatedb('scm')
 
 
 def deletepast():
@@ -144,11 +159,29 @@ def readpms():
 
                 elif (item.subject.lower() == "subreddit opt out" or
                         item.subject.lower() == "subreddit+opt+out"):
-                    print("Got a request to blacklist a subreddit from /u/" + str(item.author))
+                    subreddits_toblacklist = []
+                    for sub in subreddits_commented:
+                        if (item.author in reddit.subreddit(sub).moderator() and
+                                str(sub).lower() not in subreddit_blacklist):
+                            subreddit_blacklist.append(str(sub).lower())
+                            with open('subreddit_blacklist.json', 'w') as f:
+                                f.write(json.dumps(subreddit_blacklist, sort_keys=True, indent=4))
+                            subreddits_toblacklist.append(str(sub))
+
+                    if subreddits_toblacklist != []:
+                        subreddits_toblacklist = [s + "/r/" for s in subreddits_toblacklist]
+                        subreddits_toblacklist = re.sub("[\\['\\]]", '', str(list(subreddits_toblacklist)))
+                        item.reply("Added %s to subreddit blacklist." % subreddits_toblacklist)
+                        print("Added %s to subreddit blacklist." % subreddits_toblacklist)
+                        subreddits_toblacklist = []
+                    to_mark_read.append(item)
+                    reddit.inbox.mark_read(to_mark_read)
+                    to_mark_read = []
 
                 else:
-                    print("Got a PM from " + str(item.author) + " saying:")
-                    print(str(item.content))
+                    if item.author != "AutoModerator":
+                        print("Got a PM from " + str(item.author) + " saying:")
+                        print(str(item.body))
                     to_mark_read.append(item)
                     reddit.inbox.mark_read(to_mark_read)
                     to_mark_read = []
