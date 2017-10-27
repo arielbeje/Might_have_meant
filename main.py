@@ -88,17 +88,19 @@ def updatedb(dbtype):
 
 
 def runbot():
-    comments = subreddit.stream.comments()
-    for comment in comments:
-        content = comment.body
-        if ' might of ' in content.lower():
-            if (comment.id not in comments_replied_to and
-                    str(comment.author) not in user_blacklist and
-                    comment.created > starttime and
-                    str(comment.subreddit).lower() not in subreddit_blacklist and
-                    searchpattern.search(content) is None):
-                mightofcapt = re.search(".*?(might of).*?", content, flags=re.IGNORECASE).group(1)
-                comment.reply('''> %s
+    while True:
+        try:
+            comments = subreddit.stream.comments()
+            for comment in comments:
+                content = comment.body
+                if ' might of ' in content.lower():
+                    if (comment.id not in comments_replied_to and
+                        str(comment.author) not in user_blacklist and
+                        comment.created > starttime and
+                        str(comment.subreddit).lower() not in subreddit_blacklist and
+                            searchpattern.search(content) is None):
+                        mightofcapt = re.search(".*?(might of).*?", content, flags=re.IGNORECASE).group(1)
+                        comment.reply('''> %s
 
 Did you mean might have?
 ***
@@ -107,13 +109,19 @@ Did you mean might have?
 ^^[[Opt-out]](http://www.reddit.com/message/compose/?to=Might_have_meant&subject=User+Opt+Out&message=Click+send+to+opt+yourself+out.) ^^|
 ^^Moderator? ^^Click ^^[[here]](http://www.reddit.com/message/compose/?to=Might_have_meant&subject=Subreddit+Opt+Out&message=Click+send+to+opt+your+subreddit+out.) ^^|
 ^^Downvote ^^this ^^comment ^^to ^^delete ^^it. ^^| [^^\[Source ^^Code\]](https://github.com/arielbeje/Might_have_meant) ^^| ^^[[Programmer]](https://www.reddit.com/message/compose/?to=arielbeje)''' % mightofcapt)
-                print('Fixed a commment by', comment.author)
-                comments_replied_to.append(comment.id)
-                updatedb('cdb')
-                users_replied_to.append(str(comment.author))
-                updatedb('udb')
-                subreddits_commented.append(str(comment.subreddit).lower())
-                updatedb('scm')
+                        print('Fixed a commment by /u/', comment.author)
+                        comments_replied_to.append(comment.id)
+                        updatedb('cdb')
+                        users_replied_to.append(str(comment.author))
+                        updatedb('udb')
+                        if str(comment.subreddit) not in subreddits_commented:
+                            subreddits_commented.append(str(comment.subreddit))
+                            updatedb('scm')
+
+        except Exception as e:
+                logging.error(traceback.format_exc())
+                time.sleep(60)
+                continue
 
 
 def deletepast():
