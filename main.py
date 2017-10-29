@@ -14,7 +14,7 @@ starttime = time.time()
 user = reddit.redditor('Might_have_meant')
 threshold = 0
 comments = user.comments.new(limit=None)
-searchpattern = re.compile("((combined|whole|the( \w+)?) might of)|might of (an?|which|the|necessity|course) |(?P<quot>[\'\"]).*?might of.*?(?P=quot)", re.IGNORECASE)
+searchpattern = re.compile("((combined|whole|the( \w+)?) might of)|might of (an?|which|the|necessity|course|heroes|old) |(?P<quot>[\'\"]).*?might of.*?(?P=quot)", re.IGNORECASE)
 
 if not os.path.isfile('comments_replied_to.json'):
     comments_replied_to = []
@@ -109,7 +109,7 @@ Did you mean might have?
 ^^[[Opt-out]](http://www.reddit.com/message/compose/?to=Might_have_meant&subject=User+Opt+Out&message=Click+send+to+opt+yourself+out.) ^^|
 ^^Moderator? ^^Click ^^[[here]](http://www.reddit.com/message/compose/?to=Might_have_meant&subject=Subreddit+Opt+Out&message=Click+send+to+opt+your+subreddit+out.) ^^|
 ^^Downvote ^^this ^^comment ^^to ^^delete ^^it. ^^| [^^\[Source ^^Code\]](https://github.com/arielbeje/Might_have_meant) ^^| ^^[[Programmer]](https://www.reddit.com/message/compose/?to=arielbeje)''' % mightofcapt)
-                        print('Fixed a commment by /u/', comment.author)
+                        print('Fixed a commment by /u/' + str(comment.author))
                         comments_replied_to.append(comment.id)
                         updatedb('cdb')
                         users_replied_to.append(str(comment.author))
@@ -193,6 +193,38 @@ def readpms():
                     to_mark_read.append(item)
                     reddit.inbox.mark_read(to_mark_read)
                     to_mark_read = []
+
+            elif isinstance(item, praw.models.Message) is False:
+                if item.subject == "comment reply":
+                    if(re.search("^((\w+)( \w+){0,2}) bot", str(item.body), flags=re.IGNORECASE) is not None and
+                       item.body.lower().startswith("fuck ") is False):
+                        adjUsed = re.search("^((\w+)( \w+){0,2}) bot", str(item.body), flags=re.IGNORECASE).group(1)
+                        aOrAn = "a"
+                        if adjUsed[0] in "aeiou":
+                            aOrAn = "an"
+                        print("/u/" + str(item.author) + " just said I'm " + aOrAn + " %s bot."
+                              % adjUsed)
+
+                    else:
+                        print("Got a comment reply from /u/" + str(item.author) +
+                              " saying: \"%s\"" % str(item.body))
+
+                    to_mark_read.append(item)
+                    reddit.inbox.mark_read(to_mark_read)
+                    to_mark_read = []
+
+            elif isinstance(item, praw.models.SubredditMessage):
+                if "You've been banned from participating in" in item.subject:
+                    subreddit_blacklist.append(item.subject[43:].lower())
+                    updatedb('sbl')
+                    print("I have been banned from /r/" + item.subject[43:] +
+                          ", and have added it to the subreddit blacklist.")
+
+                else:
+                    print("Got a subreddit message with the title \"%s\"" % str(item.subject))
+                to_mark_read.append(item)
+                reddit.inbox.mark_read(to_mark_read)
+                to_mark_read = []
 
 
 if __name__ == '__main__':
