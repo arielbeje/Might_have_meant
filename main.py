@@ -106,9 +106,9 @@ Did you mean might have?
 ***
 ^^I ^^am ^^a ^^bot, ^^and ^^this ^^action ^^was ^^performed ^^automatically.
 ^^| ^^I ^^accept ^^feedback ^^in ^^PMs. ^^|
-^^[[Opt-out]](http://www.reddit.com/message/compose/?to=Might_have_meant&subject=User+Opt+Out&message=Click+send+to+opt+yourself+out.) ^^|
-^^Moderator? ^^Click ^^[[here]](http://www.reddit.com/message/compose/?to=Might_have_meant&subject=Subreddit+Opt+Out&message=Click+send+to+opt+your+subreddit+out.) ^^|
-^^Downvote ^^this ^^comment ^^to ^^delete ^^it. ^^| [^^\[Source ^^Code\]](https://github.com/arielbeje/Might_have_meant) ^^| ^^[[Programmer]](https://www.reddit.com/message/compose/?to=arielbeje)''' % mightofcapt)
+^^[[Opt-out]](http://np.reddit.com/message/compose/?to=Might_have_meant&subject=User+Opt+Out&message=Click+send+to+opt+yourself+out.) ^^|
+^^Moderator? ^^Click ^^[[here]](http://np.reddit.com/message/compose/?to=Might_have_meant&subject=Subreddit+Opt+Out&message=Click+send+to+opt+your+subreddit+out.) ^^|
+^^Downvote ^^this ^^comment ^^to ^^delete ^^it. ^^| [^^\[Source ^^Code\]](https://github.com/arielbeje/Might_have_meant) ^^| ^^[[Programmer]](https://np.reddit.com/message/compose/?to=arielbeje)''' % mightofcapt)
                         print('Fixed a commment by /u/' + str(comment.author))
                         comments_replied_to.append(comment.id)
                         updatedb('cdb')
@@ -179,30 +179,42 @@ def readpms():
                     if subreddits_toblacklist != []:
                         subreddits_toblacklist = [s + "/r/" for s in subreddits_toblacklist]
                         subreddits_toblacklist = re.sub("[\\['\\]]", '', str(list(subreddits_toblacklist)))
-                        item.reply("Added %s to subreddit blacklist." % subreddits_toblacklist)
+                        item.reply("I have added %s to my subreddit blacklist." % subreddits_toblacklist)
                         print("Added %s to subreddit blacklist." % subreddits_toblacklist)
                         subreddits_toblacklist = []
+                    else:
+                        item.reply("All of your moderated subreddits are already in my blacklist.")
                     to_mark_read.append(item)
                     reddit.inbox.mark_read(to_mark_read)
                     to_mark_read = []
 
                 else:
-                    if item.author != "AutoModerator":
+                    if str(item.author) != "AutoModerator":
                         print("Got a PM from " + str(item.author) + " saying:")
                         print(str(item.body))
+                    elif (str(item.author) == "AutoModerator" and
+                          re.search("Your post in /r/(.*) has been removed!", item.subject) is not None):
+                        subreddit_blacklist.append(re.search("Your post in /r/(.*) has been removed!", item.subject).group(1).lower())
+                        updatedb('sbl')
+                        print("My submission has been removed from /r/%s, and I have added it to the subreddit blacklist."
+                              % re.search("Your post in /r/(.*) has been removed!", item.subject).group(1))
                     to_mark_read.append(item)
                     reddit.inbox.mark_read(to_mark_read)
                     to_mark_read = []
 
-            elif isinstance(item, praw.models.Message) is False:
+            elif not isinstance(item, praw.models.Message):
                 if item.subject == "comment reply":
                     if(re.search("^((\w+)( \w+){0,2}) bot", str(item.body), flags=re.IGNORECASE) is not None and
                        item.body.lower().startswith("fuck ") is False):
                         adjUsed = re.search("^((\w+)( \w+){0,2}) bot", str(item.body), flags=re.IGNORECASE).group(1)
-                        aOrAn = "a"
+                        prefix = "said I'm a"
                         if adjUsed[0] in "aeiou":
-                            aOrAn = "an"
-                        print("/u/" + str(item.author) + " just said I'm " + aOrAn + " %s bot."
+                            prefix = "said I'm an"
+                        if re.search("^\w+st bot", str(item.body), flags=re.IGNORECASE) is not None:
+                            prefix = "said I'm the"
+                        if re.search("^favou?rite bot", str(item.body), flags=re.IGNORECASE) is not None:
+                            prefix = "said I'm his/her"
+                        print("/u/" + str(item.author) + " " + prefix + " %s bot."
                               % adjUsed)
 
                     else:
