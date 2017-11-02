@@ -8,6 +8,12 @@ import traceback
 import re
 import threading
 
+if not os.path.isfile('log.txt'):
+    f = open('log.txt', 'w+')
+    f.close()
+logging.basicConfig(filename='log.txt', level=logging.WARNING,
+                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
+logger = logging.getLogger(__name__)
 reddit = praw.Reddit('bot1')
 subreddit = reddit.subreddit('all')
 starttime = time.time()
@@ -16,8 +22,19 @@ threshold = 0
 comments = user.comments.new(limit=None)
 searchpattern = re.compile("((combined|whole|the( \w+)?) might of)|might of (an?|which|the|necessity|course|heroes|old) |(?P<quot>[\'\"]).*?might of.*?(?P=quot)", re.IGNORECASE)
 
-if not os.path.isfile('comments_replied_to.json'):
+for dblist in ['comments_replied_to', 'users_replied_to', 'subreddit_blacklist', 'user_blacklist', 'sentence_blacklist', 'past_deleted', 'subreddits_commented']:
+    if not os.path.isfile(str(dblist) + '.json'):
+        globals()[dblist] = []
+        f = open('%s.json' % str(dblist), 'w+')
+        f.close()
+    else:
+        with open('%s.json' % str(dblist), 'r') as f:
+            globals()[dblist] = json.load(f)
+
+
+'''if not os.path.isfile('comments_replied_to.json'):
     comments_replied_to = []
+
 else:
     with open('comments_replied_to.json', 'r') as f:
         comments_replied_to = json.load(f)
@@ -63,7 +80,7 @@ if not os.path.isfile('subreddits_commented.json'):
 else:
     with open('subreddits_commented.json', 'r') as f:
         subreddits_commented = json.load(f)
-        subreddits_commented = list(filter(None, subreddits_commented))
+        subreddits_commented = list(filter(None, subreddits_commented))'''
 
 
 def updatedb(dbtype):
@@ -93,6 +110,14 @@ def runbot():
             comments = subreddit.stream.comments()
             for comment in comments:
                 content = comment.body
+                originalComment = comment
+                refresh_counter = 0
+                while not comment.is_root:
+                        comment = comment.parent()
+                        if refresh_counter % 9 == 0:
+                            comment.refresh()
+                        refresh_counter += 1
+
                 if ' might of ' in content.lower():
                     if (comment.id not in comments_replied_to and
                         str(comment.author) not in user_blacklist and
@@ -107,19 +132,20 @@ Did you mean might have?
 ^^I ^^am ^^a ^^bot, ^^and ^^this ^^action ^^was ^^performed ^^automatically.
 ^^| ^^I ^^accept ^^feedback ^^in ^^PMs. ^^|
 ^^[[Opt-out]](http://np.reddit.com/message/compose/?to=Might_have_meant&subject=User+Opt+Out&message=Click+send+to+opt+yourself+out.) ^^|
-^^Moderator? ^^Click ^^[[here]](http://np.reddit.com/message/compose/?to=Might_have_meant&subject=Subreddit+Opt+Out&message=Click+send+to+opt+your+subreddit+out.) ^^|
+^^Moderator? ^^Click ^^[[here]](http://np.reddit.com/message/compose/?to=Might_have_meant&subject=Subreddit+Opt+Out&message=Click+send+to+opt+your+subreddit+out.) to opt out all of your moderated subreddits. ^^|
 ^^Downvote ^^this ^^comment ^^to ^^delete ^^it. ^^| [^^\[Source ^^Code\]](https://github.com/arielbeje/Might_have_meant) ^^| ^^[[Programmer]](https://np.reddit.com/message/compose/?to=arielbeje)''' % mightofcapt)
-                        print('Fixed a commment by /u/' + str(comment.author))
+                        print('Fixed a commment by /u/' + str(originalComment.author))
                         comments_replied_to.append(comment.id)
                         updatedb('cdb')
-                        users_replied_to.append(str(comment.author))
+                        users_replied_to.append(str(originalComment.author))
                         updatedb('udb')
                         if str(comment.subreddit) not in subreddits_commented:
                             subreddits_commented.append(str(comment.subreddit))
                             updatedb('scm')
 
         except Exception as e:
-                logging.error(traceback.format_exc())
+                logger.error(traceback.format_exc())
+                print("I have encountered an error, and have added it to the log.")
                 time.sleep(60)
                 continue
 
@@ -142,7 +168,8 @@ def deletepast():
                     # print("Did not delete <1 hour old comment with ID " + comment.id)
 
             except Exception as e:
-                logging.error(traceback.format_exc())
+                logger.error(traceback.format_exc())
+                print("I have encountered an error, and have added it to the log.")
                 continue
 
         updatedb('pdl')
@@ -154,7 +181,7 @@ def readpms():
         for item in reddit.inbox.stream():
             # print("Checking message with subject \"%s\"" % item.subject)
             if(isinstance(item, praw.models.Message) and item.author not in user_blacklist and
-               isinstance(item, praw.models.SubredditMessage) is False):
+               not isinstance(item, praw.models.SubredditMessage)):
                 if (item.subject.lower() == "user opt out" or
                         item.subject.lower() == "user+opt+out"):
                     user_blacklist.append(str(item.author))
@@ -168,13 +195,12 @@ def readpms():
                 elif (item.subject.lower() == "subreddit opt out" or
                         item.subject.lower() == "subreddit+opt+out"):
                     subreddits_toblacklist = []
-                    for sub in subreddits_commented:
-                        if (item.author in reddit.subreddit(sub).moderator() and
-                                str(sub).lower() not in subreddit_blacklist):
-                            subreddit_blacklist.append(str(sub).lower())
-                            with open('subreddit_blacklist.json', 'w') as f:
-                                f.write(json.dumps(subreddit_blacklist, sort_keys=True, indent=4))
-                            subreddits_toblacklist.append(str(sub))
+                    for subr in subreddits_commented:
+                        if (item.author in reddit.subreddit(subr).moderator() and
+                                str(subr).lower() not in subreddit_blacklist):
+                            subreddit_blacklist.append(str(subr).lower())
+                            updatedb('sbl')
+                            subreddits_toblacklist.append(str(subr))
 
                     if subreddits_toblacklist != []:
                         subreddits_toblacklist = [s + "/r/" for s in subreddits_toblacklist]
@@ -191,7 +217,7 @@ def readpms():
                 else:
                     if str(item.author) != "AutoModerator":
                         print("Got a PM from " + str(item.author) + " saying:")
-                        print(str(item.body))
+                        print("\"" + str(item.body) + "\"")
                     elif (str(item.author) == "AutoModerator" and
                           re.search("Your post in /r/(.*) has been removed!", item.subject) is not None):
                         subreddit_blacklist.append(re.search("Your post in /r/(.*) has been removed!", item.subject).group(1).lower())
@@ -204,9 +230,9 @@ def readpms():
 
             elif not isinstance(item, praw.models.Message):
                 if item.subject == "comment reply":
-                    if(re.search("^((\w+)( \w+){0,2}) bot", str(item.body), flags=re.IGNORECASE) is not None and
+                    if(re.search("^((\w+)( \w+){0,2}) bot(?!.*s)", str(item.body), flags=re.IGNORECASE) is not None and
                        item.body.lower().startswith("fuck ") is False):
-                        adjUsed = re.search("^((\w+)( \w+){0,2}) bot", str(item.body), flags=re.IGNORECASE).group(1)
+                        adjUsed = re.search("^((\w+)( \w+){0,2}) bot(?!.*s)", str(item.body), flags=re.IGNORECASE).group(1)
                         prefix = "said I'm a"
                         if adjUsed[0] in "aeiou":
                             prefix = "said I'm an"
@@ -218,8 +244,12 @@ def readpms():
                               % adjUsed)
 
                     else:
-                        print("Got a comment reply from /u/" + str(item.author) +
-                              " saying: \"%s\"" % str(item.body))
+                        if len(str(item.body)) >= 200:
+                            print("Got a comment reply from /u/" + str(item.author) +
+                                  " saying: \"%s\"" % str(item.body))
+                        else:
+                            print("Got a comment reply from /u/" + str(item.author) +
+                                  ": https://www.reddit.com/api/info.json?id=" + str(item.fullname))
 
                     to_mark_read.append(item)
                     reddit.inbox.mark_read(to_mark_read)

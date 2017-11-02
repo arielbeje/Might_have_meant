@@ -9,3 +9,4 @@ sentence_blacklist.json
 past_deleted.json
 comments_replied_to.json
 subreddits_commented.json
+log.txt
